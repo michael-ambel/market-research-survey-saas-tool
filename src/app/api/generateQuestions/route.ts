@@ -7,6 +7,15 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Fallback questions
+const FALLBACK_QUESTIONS = [
+  "What is your overall satisfaction with our product?",
+  "How likely are you to recommend our product to others?",
+  "What features do you find most useful?",
+  "What improvements would you suggest?",
+  "How would you rate our customer support?",
+];
+
 export async function POST(request: Request) {
   try {
     await connectDb();
@@ -17,43 +26,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    // Generate questions using OpenAI
-    const prompt = `Generate five engaging questions for a survey based on the topic: ${title}`;
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 100,
-    });
+    let questions: string[] = [];
+    let isFallback = false;
 
-    const questions = response.choices[0].message.content
-      ?.split("\n")
-      .filter((q) => q.trim());
+    try {
+      // Generate questions using OpenAI
+      const prompt = `Generate five engaging questions for a survey based on the topic: ${title}`;
+      const response = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 100,
+      });
 
-    if (!questions) {
-      return NextResponse.json(
-        { error: "Failed to generate questions" },
-        { status: 500 }
-      );
+      questions =
+        response.choices[0].message.content
+          ?.split("\n")
+          .filter((q) => q.trim()) || [];
+    } catch (error) {
+      console.error("OpenAI API Error:", error);
+      // Use fallback questions if OpenAI API fails
+      questions = FALLBACK_QUESTIONS;
+      isFallback = true;
     }
 
     // Save the survey with generated questions
     const survey = new Survey({ title, questions });
     await survey.save();
 
-    return NextResponse.json({ questions, surveyId: survey._id });
-  } catch (error: any) {
+    return NextResponse.json({ questions, surveyId: survey._id, isFallback });
+  } catch (error) {
     console.error(error);
-
-    if (error.code === "insufficient_quota") {
-      return NextResponse.json(
-        {
-          error:
-            "OpenAI API quota exceeded. Please check your billing details.",
-        },
-        { status: 429 }
-      );
-    }
-
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
