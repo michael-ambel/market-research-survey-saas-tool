@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { getAuthCookie, removeAuthCookie } from "../utils/auth";
 
 export default function Home() {
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const isLoggedIn = !!getAuthCookie();
 
   const handleGenerateQuestions = async () => {
     if (!title) {
@@ -33,13 +34,6 @@ export default function Home() {
       }
 
       const data = await response.json();
-
-      if (data.isFallback) {
-        setError(
-          "We are currently unable to generate AI-driven questions. Default questions have been used instead."
-        );
-      }
-
       router.push(`/survey/${data.surveyId}`);
     } catch (error) {
       console.error(error);
@@ -49,35 +43,66 @@ export default function Home() {
     }
   };
 
+  const handleLogout = () => {
+    removeAuthCookie();
+    router.push("/auth/signin");
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-      <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md"
-      >
-        <h1 className="text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-background">
+      <div className="bg-white dark:bg-dark-card p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 className="text-2xl font-bold mb-6 text-center">
           Market Research Survey Tool
         </h1>
+        {isLoggedIn ? (
+          <>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 mb-4"
+            >
+              View Your Surveys
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 mb-4"
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => router.push("/auth/signin")}
+              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mb-4"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => router.push("/auth/signup")}
+              className="w-full bg-purple-500 text-white p-2 rounded hover:bg-purple-600 mb-4"
+            >
+              Register
+            </button>
+          </>
+        )}
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter a title for your survey"
-          className="w-full p-3 border border-gray-300 rounded-lg mb-4 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-2 border border-gray-300 rounded mb-4 dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
         />
         <button
           onClick={handleGenerateQuestions}
           disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 transition-all"
+          className="w-full bg-primary text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
         >
           {loading ? "Generating..." : "Generate Questions"}
         </button>
         {error && (
           <p className="mt-4 text-sm text-red-600 text-center">{error}</p>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }

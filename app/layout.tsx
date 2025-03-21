@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { DarkModeProvider } from "../context/DarkModeContext";
 import DarkModeToggle from "../components/DarkModeToggle";
 
 const geistSans = Geist({
@@ -28,12 +29,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-dark-background text-gray-900 dark:text-dark-text`}
       >
-        <div className="min-h-screen flex flex-col">
-          <header className="p-4 flex justify-end">
-            <DarkModeToggle />
-          </header>
-          <main className="flex-grow">{children}</main>
-        </div>
+        <DarkModeProvider>
+          <div className="min-h-screen flex flex-col">
+            <header className="p-4 flex justify-end">
+              <DarkModeToggle />
+            </header>
+            <main className="flex-grow">{children}</main>
+          </div>
+        </DarkModeProvider>
       </body>
     </html>
   );
