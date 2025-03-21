@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function SurveyPage({
   params,
@@ -14,7 +15,6 @@ export default function SurveyPage({
   const [error, setError] = useState("");
   const router = useRouter();
 
-  // Fetch survey questions when the page loads
   useEffect(() => {
     const fetchSurvey = async () => {
       try {
@@ -67,8 +67,13 @@ export default function SurveyPage({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-background">
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white dark:bg-dark-card p-8 rounded-lg shadow-md w-full max-w-md"
+      >
         <h1 className="text-2xl font-bold mb-6 text-center">
           Survey Questions
         </h1>
@@ -76,7 +81,13 @@ export default function SurveyPage({
           <p className="text-red-600 text-center mb-4">{error}</p>
         ) : (
           questions.map((question, index) => (
-            <div key={index} className="mb-4">
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="mb-4"
+            >
               <label className="block text-sm font-medium mb-1">
                 {question}
               </label>
@@ -88,19 +99,19 @@ export default function SurveyPage({
                   newAnswers[index] = e.target.value;
                   setAnswers(newAnswers);
                 }}
-                className="w-full p-2 border border-gray-300 rounded"
+                className="w-full p-2 border border-gray-300 rounded dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
               />
-            </div>
+            </motion.div>
           ))
         )}
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
+          className="w-full bg-primary text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
         >
           {loading ? "Submitting..." : "Submit Survey"}
         </button>
-      </div>
+      </motion.div>
     </div>
   );
 }

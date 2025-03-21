@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { OpenAI } from "openai";
-import connectDb from "@/utils/connectDb";
-import Survey from "@/models/Survey";
+import connectDb from "../../../utils/connectDb";
+import Survey from "../../../models/Survey";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

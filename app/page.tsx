@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function Home() {
   const [title, setTitle] = useState("");
@@ -49,9 +50,14 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-background">
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white dark:bg-dark-card p-8 rounded-lg shadow-md w-full max-w-md"
+      >
+        <h1 className="text-2xl font-bold mb-6 text-center text-red-500">
           Market Research Survey Tool
         </h1>
         <input
@@ -59,19 +65,19 @@ export default function Home() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter a title for your survey"
-          className="w-full p-2 border border-gray-300 rounded mb-4"
+          className="w-full p-2 border border-gray-300 rounded mb-4 dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
         />
         <button
           onClick={handleGenerateQuestions}
           disabled={loading}
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
+          className="w-full bg-primary text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
         >
           {loading ? "Generating..." : "Generate Questions"}
         </button>
         {error && (
           <p className="mt-4 text-sm text-red-600 text-center">{error}</p>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

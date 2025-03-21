@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "../globals.css";
+import "./globals.css";
+import DarkModeToggle from "../components/DarkModeToggle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,15 +20,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-dark-background text-gray-900 dark:text-dark-text`}
       >
-        {children}
+        <div className="min-h-screen flex flex-col">
+          <header className="p-4 flex justify-end">
+            <DarkModeToggle />
+          </header>
+          <main className="flex-grow">{children}</main>
+        </div>
       </body>
     </html>
   );
