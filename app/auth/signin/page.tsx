@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -22,13 +23,14 @@ export default function SignInPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
+        credentials: "include",
       });
 
       if (!response.ok) {
         throw new Error("Invalid credentials");
       }
 
-      router.push("/");
+      router.push("/"); // Redirect to home page
     } catch (error) {
       console.error(error);
       setError("Invalid credentials. Please try again.");
@@ -38,16 +40,23 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-background">
-      <div className="bg-white dark:bg-dark-card p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Sign In</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md"
+      >
+        <h1 className="text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+          Sign In
+        </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="w-full p-2 border border-gray-300 rounded dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+            className="w-full p-3 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <input
@@ -55,22 +64,24 @@ export default function SignInPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
-            className="w-full p-2 border border-gray-300 rounded dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+            className="w-full p-3 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 transition-all"
           >
             {loading ? "Signing In..." : "Sign In"}
-          </button>
+          </motion.button>
         </form>
         {error && (
           <p className="mt-4 text-sm text-red-600 text-center">{error}</p>
         )}
         <p className="mt-4 text-center">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <button
             onClick={() => router.push("/auth/signup")}
             className="text-blue-500 hover:underline"
@@ -78,7 +89,7 @@ export default function SignInPage() {
             Sign Up
           </button>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

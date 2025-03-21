@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { setAuthCookie, generateToken } from "../../../../utils/auth";
 import connectDb from "../../../../utils/connectDb";
 import User from "../../../../models/User";
-import { hashPassword, generateToken } from "../../../../utils/auth";
+import { hashPassword } from "../../../../utils/auth";
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +31,11 @@ export async function POST(request: Request) {
 
     const token = generateToken(user._id.toString());
 
-    return NextResponse.json({ token });
+    // Set the auth cookie with the response object
+    const response = NextResponse.json({ success: true });
+    setAuthCookie(token, response);
+
+    return response;
   } catch (error) {
     console.error(error);
     return NextResponse.json(

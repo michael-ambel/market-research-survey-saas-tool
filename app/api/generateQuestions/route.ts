@@ -9,7 +9,7 @@ const openai = new OpenAI({
 });
 
 export async function POST(request: Request) {
-  const token = getAuthCookie();
+  const token = getAuthCookie(request);
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -48,7 +48,11 @@ export async function POST(request: Request) {
     }
 
     // Save the survey with generated questions and user ID
-    const survey = new Survey({ title, questions, userId: decoded.userId });
+    const survey = new Survey({
+      title,
+      questions,
+      userId: decoded.userId, // Include the user ID
+    });
     await survey.save();
 
     return NextResponse.json({ questions, surveyId: survey._id });
