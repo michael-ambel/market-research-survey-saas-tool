@@ -44,7 +44,6 @@ export async function POST(request: Request) {
           .filter((q) => q.trim()) || [];
     } catch (error) {
       console.error("OpenAI API Error:", error);
-      // Use fallback questions if OpenAI API fails
       questions = FALLBACK_QUESTIONS;
       isFallback = true;
     }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDb from "../../../utils/connectDb";
 import Response from "../../../models/Response";
+import Survey from "../../../models/Survey";
 
 export async function POST(request: Request) {
   try {
@@ -15,9 +16,29 @@ export async function POST(request: Request) {
       );
     }
 
+    // Fetch the survey to validate its existence and check the number of questions
+    const survey = await Survey.findById(surveyId);
+    if (!survey) {
+      return NextResponse.json({ error: "Survey not found" }, { status: 404 });
+    }
+
+    if (answers.length !== survey.questions.length) {
+      return NextResponse.json(
+        { error: "Number of answers must match the number of questions" },
+        { status: 400 }
+      );
+    }
+
     // Save the response
     const response = new Response({ surveyId, answers });
     await response.save();
+
+    // Update the survey with the new response ID
+    await Survey.findByIdAndUpdate(
+      surveyId,
+      { $push: { responses: response._id } },
+      { new: true }
+    );
 
     return NextResponse.json({ success: true, responseId: response._id });
   } catch (error) {
