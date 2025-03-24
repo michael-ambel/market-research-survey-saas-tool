@@ -1,22 +1,25 @@
-// components/EmptyState.tsx
+"use client";
+
+interface EmptyStateProps {
+  title: string;
+  description: string;
+  action: React.ReactNode;
+}
+
 export default function EmptyState({
-  title = "No surveys found",
-  description = "Create your first survey to get started",
+  title,
+  description,
   action,
-}: {
-  title?: string;
-  description?: string;
-  action?: React.ReactNode;
-}) {
+}: EmptyStateProps) {
   return (
-    <div className="text-center py-12">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-        {title}
-      </h3>
-      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-        {description}
-      </p>
-      {action && <div className="mt-6">{action}</div>}
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center max-w-md">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+          {title}
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">{description}</p>
+        {action}
+      </div>
     </div>
   );
 }

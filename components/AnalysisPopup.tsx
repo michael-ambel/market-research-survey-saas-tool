@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { FaTimes, FaRobot, FaChartPie } from "react-icons/fa";
 import { MdInsights } from "react-icons/md";
+import { marked } from "marked";
 
 export default function AnalysisPopup({
   content,
@@ -13,6 +14,44 @@ export default function AnalysisPopup({
   onClose: () => void;
   isLoading: boolean;
 }) {
+  const getProcessedContent = () => {
+    if (!content) return "";
+
+    if (content.startsWith("Analysis Error:")) {
+      return `
+        <div class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+          <div class="flex items-start gap-3">
+            <div class="text-red-500 pt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-bold text-red-600 dark:text-red-400">Analysis Failed</h3>
+              <p class="text-sm text-red-600 dark:text-red-300">${content.replace("Analysis Error: ", "")}</p>
+              ${
+                content.includes("timeout")
+                  ? `
+                <div class="mt-3 text-sm">
+                  <p class="font-medium">Suggestions:</p>
+                  <ul class="list-disc pl-5 space-y-1 mt-1">
+                    <li>Try with fewer responses</li>
+                    <li>Check your internet connection</li>
+                    <li>Wait a minute and try again</li>
+                  </ul>
+                </div>
+              `
+                  : ""
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return marked.parse(content);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div
@@ -37,8 +76,7 @@ export default function AnalysisPopup({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            aria-label="Close"
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <FaTimes className="text-lg" />
           </button>
@@ -62,14 +100,23 @@ export default function AnalysisPopup({
             </div>
           ) : (
             <div className="prose dark:prose-invert max-w-none">
-              <div className="flex items-center gap-2 mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <FaChartPie className="text-purple-500" />
-                <span className="font-medium">Key Findings</span>
-              </div>
-              <div
-                className="[&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>h3]:text-lg [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>h3]:text-purple-600 [&>h3]:dark:text-purple-400"
-                dangerouslySetInnerHTML={{ __html: content }}
-              />
+              {content.startsWith("Analysis Error:") ? (
+                <div
+                  dangerouslySetInnerHTML={{ __html: getProcessedContent() }}
+                />
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <FaChartPie className="text-purple-500" />
+                    <span className="font-medium">Key Findings</span>
+                  </div>
+                  <div
+                    className="[&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 
+                    [&>h3]:text-lg [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>h3]:text-purple-600 [&>h3]:dark:text-purple-400"
+                    dangerouslySetInnerHTML={{ __html: getProcessedContent() }}
+                  />
+                </>
+              )}
             </div>
           )}
         </div>

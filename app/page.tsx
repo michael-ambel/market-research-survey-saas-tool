@@ -126,7 +126,7 @@ export default function Home() {
           )}
           {!error && (
             <p className="text-center text-gray-500 dark:text-gray-400">
-              error
+              {error}
             </p>
           )}
         </div>

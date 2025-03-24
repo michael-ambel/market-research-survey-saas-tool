@@ -1,4 +1,3 @@
-// app/dashboard/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,25 +18,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import AnalysisPopup from "../../components/AnalysisPopup";
-import { marked } from "marked";
 import EmptyState from "../../components/EmptyState";
+import type { PopulatedSurvey, IResponse } from "../../types/types";
 
-interface Response {
+interface DashboardSurvey extends Omit<PopulatedSurvey, "responses"> {
   _id: string;
-  answers: string[];
-  createdAt: Date;
-}
-
-interface Survey {
-  _id: string;
-  title: string;
-  questions: string[];
-  responses: Response[];
-  createdAt: Date;
+  responses: Array<Omit<IResponse, "surveyId">>;
 }
 
 export default function DashboardPage() {
-  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [surveys, setSurveys] = useState<DashboardSurvey[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisContent, setAnalysisContent] = useState("");
@@ -51,9 +41,10 @@ export default function DashboardPage() {
           credentials: "include",
         });
         if (!response.ok) throw new Error("Failed to fetch surveys");
-        setSurveys(await response.json());
+        const data = await response.json();
+        setSurveys(data);
       } catch (error) {
-        console.error(error);
+        console.error("Fetch surveys error:", error);
         router.push("/auth/signin");
       } finally {
         setLoading(false);
@@ -75,24 +66,36 @@ export default function DashboardPage() {
       setShowAnalysis(true);
       setAnalysisContent("");
 
-      const response = await fetch(
-        `/api/analyzeResponses?surveyId=${surveyId}`
-      );
-      const { insights } = await response.json();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const htmlContent = await marked.parse(insights);
-      setAnalysisContent(htmlContent);
+      const response = await fetch(
+        `/api/analyzeResponses?surveyId=${surveyId}`,
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || `Analysis failed with status: ${response.status}`
+        );
+      }
+
+      const { insights } = await response.json();
+      setAnalysisContent(insights);
     } catch (error) {
       console.error("Analysis failed:", error);
       setAnalysisContent(
-        "<p>Failed to generate insights. Please try again.</p>"
+        `Analysis Error: ${(error as Error).message || "Unknown error occurred"}`
       );
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const getChartData = (survey: Survey) => {
+  const getChartData = (survey: DashboardSurvey) => {
     return survey.questions.map((question, index) => ({
       question: `Q${index + 1}`,
       responses: survey.responses.filter((res) => res.answers[index]?.trim())
@@ -118,7 +121,7 @@ export default function DashboardPage() {
         action={
           <button
             onClick={() => router.push("/")}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             Create Survey
           </button>
@@ -136,11 +139,11 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {surveys.map((survey, index) => (
           <motion.div
-            key={survey._id}
+            key={survey._id.toString()}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
           >
             <div className="flex justify-between items-start mb-3 h-[90px]">
               <div>
@@ -154,24 +157,47 @@ export default function DashboardPage() {
                 </p>
               </div>
               <button
-                onClick={() => handleShare(survey._id)}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                onClick={() => handleShare(survey._id.toString())}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 title="Share survey"
               >
                 <FaShareAlt className="text-gray-600 dark:text-gray-400 text-sm" />
               </button>
             </div>
 
-            <div className="mb-3 h-32 ">
+            <div className="mb-3 h-32">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={getChartData(survey)}>
-                  <XAxis dataKey="question" fontSize={12} />
-                  <YAxis fontSize={12} />
-                  <Tooltip />
+                <BarChart
+                  data={getChartData(survey)}
+                  margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                >
+                  <XAxis
+                    dataKey="question"
+                    stroke="#6b7280"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={{ stroke: "#e5e7eb" }}
+                  />
+                  <YAxis
+                    stroke="#6b7280"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={{ stroke: "#e5e7eb" }}
+                    width={30}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "white",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "0.5rem",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    }}
+                  />
                   <Bar
                     dataKey="responses"
                     fill="#6366f1"
-                    radius={[2, 2, 0, 0]}
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={40}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -179,9 +205,13 @@ export default function DashboardPage() {
 
             <div className="space-y-3">
               <button
-                onClick={() => analyzeResponses(survey._id)}
+                onClick={() => analyzeResponses(survey._id.toString())}
                 disabled={isAnalyzing}
-                className="w-full flex items-center justify-center gap-2 py-1.5 px-3 text-sm bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-200 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-700 transition-colors disabled:opacity-70"
+                className={`w-full flex items-center justify-center gap-2 py-1.5 px-3 text-sm rounded-lg transition-colors disabled:opacity-70 ${
+                  isAnalyzing
+                    ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                    : "bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-700"
+                }`}
               >
                 <FaMagic className="inline" />
                 {isAnalyzing ? "Analyzing..." : "Analyze Responses"}

@@ -1,16 +1,14 @@
-// app/api/analyze/route.ts
 import { NextResponse } from "next/server";
 import { OpenAI } from "openai";
 import connectDb from "../../../utils/connectDb";
 import Survey from "../../../models/Survey";
-import Response from "../../../models/Response";
 import { verifyToken, getAuthCookie } from "../../../utils/auth";
-import {
+import type {
   AnalysisResponse,
   ErrorResponse,
   TokenPayload,
-  ResponseData,
   PopulatedSurvey,
+  IResponse,
 } from "../../../types/types";
 
 const openai = new OpenAI({
@@ -25,15 +23,15 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const decoded = verifyToken(token) as TokenPayload;
-  if (!decoded) {
-    return NextResponse.json(
-      { error: "Invalid or expired token" },
-      { status: 401 }
-    );
-  }
-
   try {
+    const decoded = verifyToken(token) as TokenPayload;
+    if (!decoded.userId) {
+      return NextResponse.json(
+        { error: "Invalid or expired token" },
+        { status: 401 }
+      );
+    }
+
     await connectDb();
     const { searchParams } = new URL(req.url);
     const surveyId = searchParams.get("surveyId");
@@ -45,12 +43,14 @@ export async function GET(
       );
     }
 
+    // Set timeout for the entire operation
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 9 seconds timeout
+
     const survey = (await Survey.findById(surveyId)
-      .populate({
-        path: "responses",
-        model: Response,
-      })
-      .exec()) as PopulatedSurvey;
+      .populate<{ responses: IResponse[] }>("responses")
+      .lean()
+      .exec()) as unknown as PopulatedSurvey;
 
     if (!survey) {
       return NextResponse.json({ error: "Survey not found" }, { status: 404 });
@@ -63,30 +63,34 @@ export async function GET(
       );
     }
 
-    const responseData: ResponseData[] = survey.responses.map((response) => ({
-      answers: response.answers,
-      createdAt: response.createdAt,
-    }));
-
-    const prompt = `Analyze these survey responses and provide key insights in bullet points:
+    // Optimized prompt for faster response
+    const prompt = `Analyze these survey responses quickly (under 8 seconds):
 Title: ${survey.title}
 Questions: ${survey.questions.join("\n")}
-Responses: ${JSON.stringify(responseData)}
+Total Responses: ${survey.responses.length}
 
-Focus on:
-- Common patterns in responses
-- Unexpected findings
-- Potential areas for improvement
-- Sentiment analysis
-- Key takeaways
+Provide concise bullet points focusing on:
+- Most common patterns
+- Key unexpected findings
+- Primary areas for improvement
+- Overall sentiment summary
+- Top 3 recommendations
 
-Format the response in markdown with bold headings for each section.`;
+Format: Markdown with bold section headings. Keep response under 300 tokens.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 500,
-    });
+    const completion = await openai.chat.completions.create(
+      {
+        model: "gpt-4-turbo",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 100,
+        temperature: 0.7,
+      },
+      {
+        signal: controller.signal,
+      }
+    );
+
+    clearTimeout(timeout);
 
     const insights = completion.choices[0]?.message?.content;
     if (!insights) {
@@ -94,18 +98,25 @@ Format the response in markdown with bold headings for each section.`;
     }
 
     return NextResponse.json({ insights });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Analysis error:", error);
 
-    const errorResponse: ErrorResponse = {
-      error:
-        error instanceof Error ? error.message : "Failed to analyze responses",
-    };
+    const status =
+      error instanceof Error && error.name === "AbortError" ? 504 : 500;
+    const message =
+      status === 504
+        ? "Analysis timed out - try with fewer responses"
+        : (error instanceof Error && error.message) || "Analysis failed";
 
-    if (error instanceof Error && process.env.NODE_ENV === "development") {
-      errorResponse.details = error.stack;
-    }
-
-    return NextResponse.json(errorResponse, { status: 500 });
+    return NextResponse.json(
+      {
+        error: message,
+        ...(process.env.NODE_ENV === "development" &&
+          error instanceof Error && {
+            details: error.stack,
+          }),
+      },
+      { status }
+    );
   }
 }
