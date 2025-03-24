@@ -1,13 +1,29 @@
+// app/dashboard/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { FaChartBar, FaQuestionCircle } from "react-icons/fa";
+import {
+  FaChartBar,
+  FaQuestionCircle,
+  FaShareAlt,
+  FaMagic,
+} from "react-icons/fa";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import AnalysisPopup from "../../components/AnalysisPopup";
+import { marked } from "marked";
+import EmptyState from "../../components/EmptyState";
 
 interface Response {
   _id: string;
-  surveyId: string;
   answers: string[];
   createdAt: Date;
 }
@@ -23,6 +39,9 @@ interface Survey {
 export default function DashboardPage() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisContent, setAnalysisContent] = useState("");
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -31,97 +50,165 @@ export default function DashboardPage() {
         const response = await fetch("/api/getUserSurveys", {
           credentials: "include",
         });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            router.push("/auth/signin");
-            return;
-          }
-          throw new Error("Failed to fetch surveys");
-        }
-
-        const data = await response.json();
-        setSurveys(data);
+        if (!response.ok) throw new Error("Failed to fetch surveys");
+        setSurveys(await response.json());
       } catch (error) {
         console.error(error);
+        router.push("/auth/signin");
       } finally {
         setLoading(false);
       }
     };
-
     fetchSurveys();
   }, [router]);
 
+  const handleShare = (surveyId: string) => {
+    navigator.clipboard.writeText(
+      `${window.location.origin}/survey/${surveyId}`
+    );
+    alert("Survey link copied to clipboard!");
+  };
+
+  const analyzeResponses = async (surveyId: string) => {
+    try {
+      setIsAnalyzing(true);
+      setShowAnalysis(true);
+      setAnalysisContent("");
+
+      const response = await fetch(
+        `/api/analyzeResponses?surveyId=${surveyId}`
+      );
+      const { insights } = await response.json();
+
+      const htmlContent = await marked.parse(insights);
+      setAnalysisContent(htmlContent);
+    } catch (error) {
+      console.error("Analysis failed:", error);
+      setAnalysisContent(
+        "<p>Failed to generate insights. Please try again.</p>"
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const getChartData = (survey: Survey) => {
+    return survey.questions.map((question, index) => ({
+      question: `Q${index + 1}`,
+      responses: survey.responses.filter((res) => res.answers[index]?.trim())
+        .length,
+    }));
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-        <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-xl text-gray-500">
+          Loading surveys...
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen p-8 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-      {/* Page Title */}
-      <motion.h1
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"
-      >
-        Your Surveys
-      </motion.h1>
+  if (!loading && surveys.length === 0) {
+    return (
+      <EmptyState
+        title="No surveys yet"
+        description="Create your first survey to get started"
+        action={
+          <button
+            onClick={() => router.push("/")}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Create Survey
+          </button>
+        }
+      />
+    );
+  }
 
-      {/* Surveys List */}
-      <div className="space-y-4">
+  return (
+    <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">
+        Your Surveys
+      </h1>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {surveys.map((survey, index) => (
           <motion.div
             key={survey._id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+            transition={{ delay: index * 0.1 }}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4"
           >
-            {/* Survey Header */}
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                <FaChartBar className="text-blue-500 dark:text-blue-400" />
-                {survey.title}
-              </h2>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {survey.responses.length} responses
-              </span>
+            <div className="flex justify-between items-start mb-3 h-[90px]">
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200">
+                  <FaChartBar className="text-blue-500" />
+                  {survey.title}
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date(survey.createdAt).toLocaleDateString()} •{" "}
+                  {survey.responses.length} responses
+                </p>
+              </div>
+              <button
+                onClick={() => handleShare(survey._id)}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                title="Share survey"
+              >
+                <FaShareAlt className="text-gray-600 dark:text-gray-400 text-sm" />
+              </button>
             </div>
 
-            {/* Questions and Responses */}
+            <div className="mb-3 h-32 ">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getChartData(survey)}>
+                  <XAxis dataKey="question" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Bar
+                    dataKey="responses"
+                    fill="#6366f1"
+                    radius={[2, 2, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
             <div className="space-y-3">
-              {survey.questions.map((question, qIndex) => (
-                <div key={qIndex}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <FaQuestionCircle className="text-purple-500 dark:text-purple-400" />
-                    <p className="font-medium text-gray-700 dark:text-gray-300">
-                      {question}
-                    </p>
+              <button
+                onClick={() => analyzeResponses(survey._id)}
+                disabled={isAnalyzing}
+                className="w-full flex items-center justify-center gap-2 py-1.5 px-3 text-sm bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-200 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-700 transition-colors disabled:opacity-70"
+              >
+                <FaMagic className="inline" />
+                {isAnalyzing ? "Analyzing..." : "Analyze Responses"}
+              </button>
+
+              <div className="space-y-2">
+                {survey.questions.map((question, qIndex) => (
+                  <div key={qIndex} className="group">
+                    <div className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+                      <FaQuestionCircle className="text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm leading-tight">{question}</span>
+                    </div>
                   </div>
-                  <div className="pl-6 space-y-1">
-                    {survey.responses.map((response, rIndex) => (
-                      <p
-                        key={rIndex}
-                        className="text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        <span className="font-medium">
-                          Response {rIndex + 1}:
-                        </span>{" "}
-                        {response.answers[qIndex]}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </motion.div>
         ))}
       </div>
+
+      {showAnalysis && (
+        <AnalysisPopup
+          content={analysisContent}
+          onClose={() => setShowAnalysis(false)}
+          isLoading={isAnalyzing}
+        />
+      )}
     </div>
   );
 }

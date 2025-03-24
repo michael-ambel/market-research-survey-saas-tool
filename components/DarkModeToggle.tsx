@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MoonIcon, SunIcon } from "@heroicons/react/24/solid";
 
 export default function DarkModeToggle() {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    const isDarkMode = localStorage.getItem("darkMode") === "true";
-    setDarkMode(isDarkMode);
-    document.documentElement.classList.toggle("dark", isDarkMode);
+    const isDark = localStorage.getItem("darkMode") === "true";
+    setDarkMode(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
   }, []);
 
   const toggleDarkMode = () => {
@@ -21,9 +22,13 @@ export default function DarkModeToggle() {
   return (
     <button
       onClick={toggleDarkMode}
-      className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
     >
-      {darkMode ? "🌙" : "☀️"}
+      {darkMode ? (
+        <SunIcon className="h-5 w-5 text-yellow-400" />
+      ) : (
+        <MoonIcon className="h-5 w-5 text-orange-500" />
+      )}
     </button>
   );
 }

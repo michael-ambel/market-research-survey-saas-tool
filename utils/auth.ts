@@ -1,4 +1,4 @@
-import { getCookie, deleteCookie } from "cookies-next";
+import { deleteCookie } from "cookies-next";
 import { serialize } from "cookie";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
@@ -55,7 +55,7 @@ export const getAuthCookie = (request: Request): string | null => {
     {} as Record<string, string>
   );
 
-  return cookies["auth_token"] || null; // Use "auth_token" consistently
+  return cookies["auth_token"] || null;
 };
 
 export const removeAuthCookie = (req?: any, res?: any) => {

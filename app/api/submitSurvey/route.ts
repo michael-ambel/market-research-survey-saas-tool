@@ -16,7 +16,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Fetch the survey to validate its existence and check the number of questions
     const survey = await Survey.findById(surveyId);
     if (!survey) {
       return NextResponse.json({ error: "Survey not found" }, { status: 404 });
@@ -29,11 +28,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Save the response
     const response = new Response({ surveyId, answers });
     await response.save();
 
-    // Update the survey with the new response ID
     await Survey.findByIdAndUpdate(
       surveyId,
       { $push: { responses: response._id } },

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { FaRobot, FaChartLine, FaShareAlt } from "react-icons/fa";
 
 export default function Home() {
   const [title, setTitle] = useState("");
@@ -18,14 +19,14 @@ export default function Home() {
           credentials: "include",
         });
         const data = await response.json();
-        console.log(data);
         setIsLoggedIn(data.isLoggedIn);
       } catch (error) {
-        console.error("Error checking auth status:", error);
+        if (error) {
+          console.error("Error checking auth status:", error);
+        }
         setIsLoggedIn(false);
       }
     };
-
     checkAuthStatus();
   }, []);
 
@@ -53,8 +54,7 @@ export default function Home() {
 
       const data = await response.json();
       router.push(`/survey/${data.surveyId}`);
-    } catch (error) {
-      console.error(error);
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -65,7 +65,7 @@ export default function Home() {
     try {
       const response = await fetch("/api/auth/logout", {
         method: "POST",
-        credentials: "include", // Ensure cookies are sent with the request
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -75,87 +75,136 @@ export default function Home() {
       setIsLoggedIn(false);
       router.push("/");
     } catch (error) {
-      console.error(error);
+      if (error) {
+        console.error(error);
+      }
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 p-4">
+      {/* Hero Section */}
       <motion.div
-        initial={{ opacity: 0, y: -50 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md"
+        className="max-w-2xl w-full text-center mb-8"
       >
-        <h1 className="text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-          Market Research Survey Tool
+        <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          AI-Powered Survey Tool
         </h1>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter a title for your survey"
-          className="w-full p-3 border border-gray-300 rounded-lg mb-4 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          onClick={handleGenerateQuestions}
-          disabled={loading || !isLoggedIn}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 transition-all"
-        >
-          {loading ? "Generating..." : "Generate Questions"}
-        </button>
-
-        {/* Display message if user is not logged in */}
-        {!isLoggedIn && (
-          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
-            You must be logged in to generate questions.
-          </p>
-        )}
-
-        {error && (
-          <p className="mt-4 text-sm text-red-600 text-center">{error}</p>
-        )}
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          Create engaging surveys, analyze responses, and gain insights with AI
+        </p>
       </motion.div>
 
-      {/* Buttons outside the form */}
-      <div className="absolute top-4 right-20 space-x-2">
+      {/* Main Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 mb-8"
+      >
+        <div className="space-y-4">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter your survey topic"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={handleGenerateQuestions}
+            disabled={loading || !isLoggedIn}
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50"
+          >
+            {loading ? "Generating..." : "Generate AI Questions"}
+          </button>
+
+          {!isLoggedIn && (
+            <p className="text-center text-gray-500 dark:text-gray-400">
+              Please login to create surveys
+            </p>
+          )}
+          {!error && (
+            <p className="text-center text-gray-500 dark:text-gray-400">
+              error
+            </p>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Features Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
+        <motion.div
+          whileHover={{ y: -5 }}
+          className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <FaRobot className="text-blue-500 text-xl" />
+            <h3 className="font-semibold">AI Question Generation</h3>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Automatically generate relevant survey questions
+          </p>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ y: -5 }}
+          className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <FaChartLine className="text-purple-500 text-xl" />
+            <h3 className="font-semibold">Response Analytics</h3>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Visualize survey responses with interactive charts
+          </p>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ y: -5 }}
+          className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <FaShareAlt className="text-green-500 text-xl" />
+            <h3 className="font-semibold">Easy Sharing</h3>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Share surveys with a single link
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Auth Buttons */}
+      <div className="fixed top-4 right-[100px] flex gap-2">
         {isLoggedIn ? (
           <>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => router.push("/dashboard")}
-              className="bg-gradient-to-r from-green-600 to-teal-600 text-white p-2 rounded-lg hover:from-green-700 hover:to-teal-700 transition-all"
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              View Your Surveys
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              Dashboard
+            </button>
+            <button
               onClick={handleLogout}
-              className="bg-gradient-to-r from-red-600 to-pink-600 text-white p-2 rounded-lg hover:from-red-700 hover:to-pink-700 transition-all"
+              className="px-4 py-2 bg-red-100 dark:bg-red-800 text-red-600 dark:text-red-100 rounded-lg hover:bg-red-200 dark:hover:bg-red-700 transition-colors"
             >
               Logout
-            </motion.button>
+            </button>
           </>
         ) : (
           <>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => router.push("/auth/signin")}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"
+              className="px-4 py-2 bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-100 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
             >
               Login
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            </button>
+            <button
               onClick={() => router.push("/auth/signup")}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
+              className="px-4 py-2 bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-100 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-700 transition-colors"
             >
               Register
-            </motion.button>
+            </button>
           </>
         )}
       </div>

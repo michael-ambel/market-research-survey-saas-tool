@@ -28,7 +28,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    // Generate questions using OpenAI
     const prompt = `Generate five engaging questions for a survey based on the topic: ${title}`;
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -47,11 +46,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Save the survey with generated questions and user ID
     const survey = new Survey({
       title,
       questions,
-      userId: decoded.userId, // Include the user ID
+      userId: decoded.userId,
     });
     await survey.save();
 
