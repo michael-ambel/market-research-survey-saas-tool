@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { setAuthCookie, generateToken } from "../../../../utils/auth";
-import connectDb from "../../../../utils/connectDb";
-import User from "../../../../models/User";
-import { hashPassword } from "../../../../utils/auth";
+import { setAuthCookie, generateToken } from "@/utils/auth";
+import connectDb from "@/utils/connectDb";
+import User from "@/models/User";
+import { hashPassword } from "@/utils/auth";
 
 export async function POST(request: Request) {
   try {

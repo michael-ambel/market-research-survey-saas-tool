@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import connectDb from "../../../utils/connectDb";
-import Survey from "../../../models/Survey";
+import connectDb from "@/utils/connectDb";
+import Survey from "@/models/Survey";
 
 export async function GET(request: Request) {
   try {

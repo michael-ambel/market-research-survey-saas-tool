@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { OpenAI } from "openai";
-import connectDb from "../../../utils/connectDb";
-import Survey from "../../../models/Survey";
-import { verifyToken, getAuthCookie } from "../../../utils/auth";
+import connectDb from "@/utils/connectDb";
+import Survey from "@/models/Survey";
+import { verifyToken, getAuthCookie } from "@/utils/auth";
 import type {
   AnalysisResponse,
   ErrorResponse,
   TokenPayload,
-  PopulatedSurvey,
-  IResponse,
-} from "../../../types/types";
+} from "@/types/types";
+import Response from "@/models/Response";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -33,6 +32,7 @@ export async function GET(
     }
 
     await connectDb();
+
     const { searchParams } = new URL(req.url);
     const surveyId = searchParams.get("surveyId");
 
@@ -45,12 +45,12 @@ export async function GET(
 
     // Set timeout for the entire operation
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 9 seconds timeout
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
-    const survey = (await Survey.findById(surveyId)
-      .populate<{ responses: IResponse[] }>("responses")
-      .lean()
-      .exec()) as unknown as PopulatedSurvey;
+    const survey = await Survey.findById(surveyId).populate({
+      path: "responses",
+      model: Response,
+    });
 
     if (!survey) {
       return NextResponse.json({ error: "Survey not found" }, { status: 404 });

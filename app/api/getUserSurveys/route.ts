@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { verifyToken, getAuthCookie } from "../../../utils/auth";
-import connectDb from "../../../utils/connectDb";
-import Survey from "../../../models/Survey";
-import Response from "../../../models/Response";
+import { verifyToken, getAuthCookie } from "@/utils/auth";
+import connectDb from "@/utils/connectDb";
+import Survey from "@/models/Survey";
+import Response from "@/models/Response";
 
 export async function GET(request: Request) {
   try {
@@ -26,8 +26,7 @@ export async function GET(request: Request) {
 
     const surveys = await Survey.find({ userId: decoded.userId })
       .populate({ path: "responses", model: Response })
-      .sort({ createdAt: -1 })
-      .exec();
+      .sort({ createdAt: -1 });
 
     return NextResponse.json(surveys);
   } catch (error) {
